@@ -4,4 +4,4 @@ run: build
 	./bin/$(APP_NAME)
 
 build:
-	go build -o bin/$(APP_NAME) main.go
+	go build -o bin/$(APP_NAME) .
