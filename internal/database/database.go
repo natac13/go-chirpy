@@ -18,8 +18,14 @@ type Chirp struct {
 	Id   int    `json:"id"`
 }
 
+type User struct {
+	Email string `json:"email"`
+	Id    int    `json:"id"`
+}
+
 type DBStructure struct {
 	Chirps map[int]Chirp `json:"chirps"`
+	Users  map[int]User  `json:"users"`
 }
 
 // NewDB creates a new database connection
@@ -61,6 +67,7 @@ func (db *DB) loadDB() (DBStructure, error) {
 
 	data := DBStructure{
 		Chirps: map[int]Chirp{},
+		Users:  map[int]User{},
 	}
 
 	file, err := os.ReadFile(db.path)
@@ -138,4 +145,24 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 
 	slog.Info("DATABASE - Returning chirps", "chirps", chirps)
 	return chirps, nil
+}
+
+func (db *DB) CreateUser(email string) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user := User{
+		Id:    len(data.Users) + 1,
+		Email: email,
+	}
+
+	data.Users[user.Id] = user
+
+	if err := db.writeDB(data); err != nil {
+		return user, err
+	}
+
+	return user, nil
 }

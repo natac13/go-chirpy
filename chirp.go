@@ -19,12 +19,11 @@ type ChirpRequest struct {
 	Body string `json:"body"`
 }
 
-// bad words:
-// kerfuffle
-// sharbert
-// fornax
-
 func cleanChirpMessage(m string) string {
+	// bad words:
+	// kerfuffle
+	// sharbert
+	// fornax
 	listOfBadWords := []string{"kerfuffle", "sharbert", "fornax"}
 	listOfWords := strings.Split(m, " ")
 	replacement := "****"

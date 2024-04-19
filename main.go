@@ -30,6 +30,8 @@ func main() {
 	router.HandleFunc("GET /api/chirps", handleGetChirps(db))
 	router.HandleFunc("GET /api/chirps/{id}", handleGetChirp(db))
 
+	router.HandleFunc("POST /api/users", handleCreateUser(db))
+
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: middlewareCors(router),
