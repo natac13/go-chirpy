@@ -15,8 +15,8 @@ func main() {
 	staticFiles := http.FileServer(http.Dir("."))
 
 	router.Handle("/app/*", http.StripPrefix("/app", config.metricsHitMiddleware(staticFiles)))
-	router.HandleFunc("/healthz", handleHealthz)
-	router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("GET /healthz", handleHealthz)
+	router.HandleFunc("GET /metrics", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write([]byte("Hits: " + strconv.Itoa(config.fileserverHits) + "\n"))
 	})
