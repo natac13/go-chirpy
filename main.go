@@ -3,13 +3,29 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 func main() {
 	router := http.NewServeMux()
+	config := &apiConfig{
+		fileserverHits: 0,
+	}
 
-	router.Handle("/app/*", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
+	staticFiles := http.FileServer(http.Dir("."))
+
+	router.Handle("/app/*", http.StripPrefix("/app", config.metricsHitMiddleware(staticFiles)))
 	router.HandleFunc("/healthz", handleHealthz)
+	router.HandleFunc("/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte("Hits: " + strconv.Itoa(config.fileserverHits) + "\n"))
+	})
+	router.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+		config.fileserverHits = 0
+
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte("Hits reset\n"))
+	})
 
 	server := http.Server{
 		Addr:    ":8080",
@@ -39,4 +55,15 @@ func handleHealthz(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	// write the response
 	w.Write([]byte("OK"))
+}
+
+type apiConfig struct {
+	fileserverHits int
+}
+
+func (a *apiConfig) metricsHitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		a.fileserverHits = a.fileserverHits + 1
+		next.ServeHTTP(w, r)
+	})
 }
