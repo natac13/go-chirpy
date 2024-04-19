@@ -1,9 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
-	"strconv"
 )
 
 func main() {
@@ -16,11 +16,13 @@ func main() {
 
 	router.Handle("/app/*", http.StripPrefix("/app", config.metricsHitMiddleware(staticFiles)))
 	router.HandleFunc("GET /api/healthz", handleHealthz)
-	router.HandleFunc("GET /api/metrics", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Write([]byte("Hits: " + strconv.Itoa(config.fileserverHits) + "\n"))
+	router.HandleFunc("GET /admin/metrics", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+
+		output := fmt.Sprintf("<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has beed visited %d times!</p></body></html>", config.fileserverHits)
+		w.Write([]byte(output))
 	})
-	router.HandleFunc("/reset", func(w http.ResponseWriter, r *http.Request) {
+	router.HandleFunc("/api/reset", func(w http.ResponseWriter, r *http.Request) {
 		config.fileserverHits = 0
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
