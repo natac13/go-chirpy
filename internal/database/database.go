@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"os"
+	"sort"
 	"sync"
 )
 
@@ -24,13 +25,11 @@ type DBStructure struct {
 // NewDB creates a new database connection
 // and creates the database file if it doesn't exist
 func NewDB(path string) (*DB, error) {
-	slog.Info("New database", "path", path)
 	db := &DB{
 		path: path,
 		mux:  sync.RWMutex{},
 	}
 
-	slog.Info("Ensuring database exists", "path", path)
 	if err := db.ensureDB(); err != nil {
 		return nil, err
 	}
@@ -52,7 +51,6 @@ func (db *DB) ensureDB() error {
 			return err
 		}
 	}
-	slog.Info("Database ready file at", "path", db.path)
 	return nil
 }
 
@@ -65,7 +63,6 @@ func (db *DB) loadDB() (DBStructure, error) {
 		Chirps: map[int]Chirp{},
 	}
 
-	slog.Info("Loading database file", "path", db.path)
 	file, err := os.ReadFile(db.path)
 	if err != nil {
 		return data, err
@@ -74,8 +71,6 @@ func (db *DB) loadDB() (DBStructure, error) {
 	if err := json.Unmarshal(file, &data); err != nil {
 		return data, err
 	}
-
-	slog.Info("Database loaded into memory", "path", db.path, "data", data)
 
 	return data, nil
 }
@@ -122,15 +117,11 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 // GetChirps returns all chirps in the database
 func (db *DB) GetChirps() ([]Chirp, error) {
 
-	slog.Info("DATABASE - Getting chirps")
-
 	data, err := db.loadDB()
 	if err != nil {
 		slog.Error("DATABASE - Error getting chirps", "error", err)
 		return nil, err
 	}
-
-	slog.Info("DATABASE - Got chirps", "chirps", data.Chirps)
 
 	if len(data.Chirps) == 0 {
 		return []Chirp{}, nil
@@ -141,9 +132,9 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 		chirps = append(chirps, chirp)
 	}
 
-	// sort.Slice(chirps, func(i, y int) bool {
-	// 	return chirps[i].Id < chirps[y].Id
-	// })
+	sort.Slice(chirps, func(i, y int) bool {
+		return chirps[i].Id < chirps[y].Id
+	})
 
 	slog.Info("DATABASE - Returning chirps", "chirps", chirps)
 	return chirps, nil

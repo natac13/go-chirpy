@@ -28,6 +28,7 @@ func main() {
 
 	router.HandleFunc("POST /api/chirps", handleCreateChirp(db))
 	router.HandleFunc("GET /api/chirps", handleGetChirps(db))
+	router.HandleFunc("GET /api/chirps/{id}", handleGetChirp(db))
 
 	server := http.Server{
 		Addr:    ":8080",

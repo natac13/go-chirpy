@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/natac13/go-chirpy/internal/database"
@@ -44,17 +45,38 @@ func cleanChirpMessage(m string) string {
 
 func handleGetChirps(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		slog.Info("Getting chirps")
 		chirps, err := db.GetChirps()
 		if err != nil {
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		slog.Info("Got chirps", "chirps", chirps)
-
 		respondWithJSON(w, http.StatusOK, chirps)
 	}
+}
+
+func handleGetChirp(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		chirps, err := db.GetChirps()
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		slog.Info("Getting chirp", "id", id, "chirps", chirps)
+
+		for _, chirp := range chirps {
+			if chirp.Id == id {
+				respondWithJSON(w, http.StatusOK, chirp)
+				return
+			}
+		}
+
+		respondWithError(w, http.StatusNotFound, "Chirp not found")
+	}
+
 }
 
 func handleCreateChirp(db *database.DB) http.HandlerFunc {
