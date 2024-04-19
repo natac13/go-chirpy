@@ -1,13 +1,27 @@
 package main
 
 import (
+	"flag"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/natac13/go-chirpy/internal/database"
 )
 
+const (
+	databasePath = "database.json"
+)
+
 func main() {
+	dbg := flag.Bool("debug", false, "Enable debug mode")
+	flag.Parse()
+
+	if &dbg != nil && *dbg {
+		slog.Info("Debug mode enabled. Deleting database file.", "path", databasePath)
+		os.Remove(databasePath)
+	}
+
 	router := http.NewServeMux()
 	config := &apiConfig{
 		fileserverHits: 0,
@@ -15,7 +29,7 @@ func main() {
 
 	staticFiles := http.FileServer(http.Dir("."))
 
-	db, err := database.NewDB("database.json")
+	db, err := database.NewDB(databasePath)
 	if err != nil {
 		slog.Error("Error opening database: ", "error", err)
 		panic("Error opening database")
