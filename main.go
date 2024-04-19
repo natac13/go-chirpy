@@ -8,7 +8,8 @@ import (
 func main() {
 	router := http.NewServeMux()
 
-	router.Handle("/", http.FileServer(http.Dir(".")))
+	router.Handle("/app/*", http.StripPrefix("/app", http.FileServer(http.Dir("."))))
+	router.HandleFunc("/healthz", handleHealthz)
 
 	server := http.Server{
 		Addr:    ":8080",
@@ -31,4 +32,11 @@ func middlewareCors(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func handleHealthz(w http.ResponseWriter, r *http.Request) {
+	// set the content type
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// write the response
+	w.Write([]byte("OK"))
 }
