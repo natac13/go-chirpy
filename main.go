@@ -7,11 +7,12 @@ import (
 
 func main() {
 	router := http.NewServeMux()
-	corsMux := middlewareCors(router)
+
+	router.Handle("/", http.FileServer(http.Dir(".")))
 
 	server := http.Server{
 		Addr:    ":8080",
-		Handler: corsMux,
+		Handler: middlewareCors(router),
 	}
 
 	if err := server.ListenAndServe(); err != nil {
