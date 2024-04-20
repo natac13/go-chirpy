@@ -46,6 +46,7 @@ func main() {
 	router.HandleFunc("POST /api/chirps", models.HandleCreateChirp(db))
 	router.HandleFunc("GET /api/chirps", models.HandleGetChirps(db))
 	router.HandleFunc("GET /api/chirps/{id}", models.HandleGetChirp(db))
+	router.HandleFunc(("DELETE /api/chirps/{id}"), models.HandleDeleteChirp(db))
 
 	router.HandleFunc("POST /api/users", models.HandleCreateUser(db))
 	router.HandleFunc("POST /api/login", models.HandleUserLogin(db))

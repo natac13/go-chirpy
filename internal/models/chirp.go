@@ -108,3 +108,38 @@ func HandleCreateChirp(db *database.DB) http.HandlerFunc {
 		response.RespondWithJSON(w, http.StatusCreated, chirp)
 	}
 }
+
+func HandleDeleteChirp(db *database.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, err := auth.ValidateToken(r)
+		if err != nil {
+			response.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+
+		idStr := r.PathValue("id")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			response.RespondWithError(w, http.StatusBadRequest, "Invalid chirp id")
+			return
+		}
+
+		chirp, err := db.GetChirpById(id)
+		if err != nil {
+			response.RespondWithError(w, http.StatusNotFound, "Chirp not found")
+			return
+		}
+
+		if chirp.AuthorId != userId {
+			response.RespondWithError(w, http.StatusForbidden, "You are not the author of this chirp")
+			return
+		}
+
+		if err := db.DeleteChirp(id); err != nil {
+			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		response.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Chirp deleted"})
+	}
+}
