@@ -4,11 +4,14 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/joho/godotenv"
 	"github.com/natac13/go-chirpy/internal/database"
 	"github.com/natac13/go-chirpy/internal/models"
 )
 
 func main() {
+	godotenv.Load()
+
 	router := http.NewServeMux()
 	config := &apiConfig{
 		fileserverHits: 0,
@@ -33,6 +36,7 @@ func main() {
 
 	router.HandleFunc("POST /api/users", models.HandleCreateUser(db))
 	router.HandleFunc("POST /api/login", models.HandleUserLogin(db))
+	router.HandleFunc("PUT /api/users", models.HandleUpdateUser(db))
 
 	server := http.Server{
 		Addr:    ":8080",

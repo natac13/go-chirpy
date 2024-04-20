@@ -52,7 +52,6 @@ func (db *DB) ensureDB() error {
 	_, err := os.ReadFile(db.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Info("Creating new database file", "path", db.path)
 			if err := os.WriteFile(db.path, []byte("{}"), 0666); err != nil {
 				return err
 			}
@@ -146,7 +145,6 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 		return chirps[i].Id < chirps[y].Id
 	})
 
-	slog.Info("DATABASE - Returning chirps", "chirps", chirps)
 	return chirps, nil
 }
 
@@ -180,6 +178,39 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	return user, nil
 }
 
+func (db *DB) UpdateUser(userId int, email, password string) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user, err := db.getUserById(userId)
+	if err != nil {
+		return User{}, err
+	}
+
+	if email != "" {
+		user.Email = email
+	}
+
+	if password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return User{}, err
+		}
+
+		user.Password = string(hash)
+	}
+
+	data.Users[user.Id] = user
+
+	if err := db.writeDB(data); err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
 func (db *DB) checkDuplicateEmail(email string) bool {
 	data, err := db.loadDB()
 	if err != nil {
@@ -201,8 +232,6 @@ func (db *DB) VerifyPassword(email, password string) (User, error) {
 		return User{}, err
 	}
 
-	slog.Info("DATABASE - Verifying password", "user", user, "password", password, "hash", user.Password)
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return User{}, err
@@ -219,6 +248,21 @@ func (db *DB) getUserByEmail(email string) (User, error) {
 
 	for _, user := range data.Users {
 		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return User{}, nil
+}
+
+func (db *DB) getUserById(id int) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	for _, user := range data.Users {
+		if user.Id == id {
 			return user, nil
 		}
 	}

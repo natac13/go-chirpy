@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
@@ -64,8 +63,6 @@ func HandleGetChirp(db *database.DB) http.HandlerFunc {
 			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-
-		slog.Info("Getting chirp", "id", id, "chirps", chirps)
 
 		for _, chirp := range chirps {
 			if chirp.Id == id {
