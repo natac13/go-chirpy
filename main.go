@@ -51,6 +51,9 @@ func main() {
 	router.HandleFunc("POST /api/login", models.HandleUserLogin(db))
 	router.HandleFunc("PUT /api/users", models.HandleUpdateUser(db))
 
+	router.HandleFunc("POST /api/revoke", RevokeTokenHandler(db))
+	router.HandleFunc("POST /api/refresh", RefreshTokenHandler(db))
+
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: middlewareCors(router),

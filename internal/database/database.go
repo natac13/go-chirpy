@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,9 +27,14 @@ type User struct {
 	Password string `json:"password"`
 }
 
+type RevokedToken struct {
+	RevokedAt time.Time `json:"revoked_at"`
+}
+
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
+	Chirps        map[int]Chirp           `json:"chirps"`
+	Users         map[int]User            `json:"users"`
+	RevokedTokens map[string]RevokedToken `json:"revoked_tokens"`
 }
 
 // NewDB creates a new database connection
@@ -68,8 +74,9 @@ func (db *DB) loadDB() (DBStructure, error) {
 	defer db.mux.Unlock()
 
 	data := DBStructure{
-		Chirps: map[int]Chirp{},
-		Users:  map[int]User{},
+		Chirps:        map[int]Chirp{},
+		Users:         map[int]User{},
+		RevokedTokens: map[string]RevokedToken{},
 	}
 
 	file, err := os.ReadFile(db.path)
@@ -184,7 +191,7 @@ func (db *DB) UpdateUser(userId int, email, password string) (User, error) {
 		return User{}, err
 	}
 
-	user, err := db.getUserById(userId)
+	user, err := db.GetUserById(userId)
 	if err != nil {
 		return User{}, err
 	}
@@ -209,6 +216,33 @@ func (db *DB) UpdateUser(userId int, email, password string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (db *DB) RevokeToken(token string) error {
+	data, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	data.RevokedTokens[token] = RevokedToken{
+		RevokedAt: time.Now().UTC(),
+	}
+
+	if err := db.writeDB(data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) IsTokenRevoked(token string) bool {
+	data, err := db.loadDB()
+	if err != nil {
+		return true
+	}
+
+	_, ok := data.RevokedTokens[token]
+	return ok
 }
 
 func (db *DB) checkDuplicateEmail(email string) bool {
@@ -255,7 +289,7 @@ func (db *DB) getUserByEmail(email string) (User, error) {
 	return User{}, nil
 }
 
-func (db *DB) getUserById(id int) (User, error) {
+func (db *DB) GetUserById(id int) (User, error) {
 	data, err := db.loadDB()
 	if err != nil {
 		return User{}, err
