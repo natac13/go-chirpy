@@ -2,6 +2,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -14,7 +15,11 @@ const (
 	RefreshIssuer = "chirpy-refresh"
 )
 
-func ValidateToken(authHeader string) (int, error) {
+func ValidateToken(r *http.Request) (int, error) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return 0, errors.New("No authorization header")
+	}
 
 	tokenString := authHeader[len("Bearer "):]
 	claims := jwt.RegisteredClaims{}

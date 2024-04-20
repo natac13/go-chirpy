@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/natac13/go-chirpy/internal/auth"
 	"github.com/natac13/go-chirpy/internal/database"
 	"github.com/natac13/go-chirpy/internal/response"
 )
@@ -78,9 +79,16 @@ func HandleGetChirp(db *database.DB) http.HandlerFunc {
 
 func HandleCreateChirp(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		userId, err := auth.ValidateToken(r)
+		if err != nil {
+			response.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+
 		decoder := json.NewDecoder(r.Body)
 		var chirpRequest ChirpRequest
-		err := decoder.Decode(&chirpRequest)
+		err = decoder.Decode(&chirpRequest)
 		if err != nil {
 			response.RespondWithError(w, http.StatusBadRequest, "Invalid request")
 			return
@@ -91,7 +99,7 @@ func HandleCreateChirp(db *database.DB) http.HandlerFunc {
 			return
 		}
 
-		chirp, err := db.CreateChirp(chirpRequest.Body)
+		chirp, err := db.CreateChirp(chirpRequest.Body, userId)
 		if err != nil {
 			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return

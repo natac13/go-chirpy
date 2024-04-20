@@ -94,13 +94,7 @@ type UserUpdateRequest struct {
 
 func HandleUpdateUser(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			response.RespondWithError(w, http.StatusUnauthorized, "No authorization header")
-			return
-		}
-
-		userId, err := auth.ValidateToken(authHeader)
+		userId, err := auth.ValidateToken(r)
 		if err != nil {
 			response.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
 			return
