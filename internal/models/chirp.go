@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/natac13/go-chirpy/internal/database"
+	"github.com/natac13/go-chirpy/internal/response"
 )
 
 type ChirpResponse struct {
@@ -42,25 +43,25 @@ func cleanChirpMessage(m string) string {
 
 }
 
-func handleGetChirps(db *database.DB) http.HandlerFunc {
+func HandleGetChirps(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		chirps, err := db.GetChirps()
 		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		respondWithJSON(w, http.StatusOK, chirps)
+		response.RespondWithJSON(w, http.StatusOK, chirps)
 	}
 }
 
-func handleGetChirp(db *database.DB) http.HandlerFunc {
+func HandleGetChirp(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.PathValue("id")
 		id, err := strconv.Atoi(idStr)
 		chirps, err := db.GetChirps()
 		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -68,37 +69,37 @@ func handleGetChirp(db *database.DB) http.HandlerFunc {
 
 		for _, chirp := range chirps {
 			if chirp.Id == id {
-				respondWithJSON(w, http.StatusOK, chirp)
+				response.RespondWithJSON(w, http.StatusOK, chirp)
 				return
 			}
 		}
 
-		respondWithError(w, http.StatusNotFound, "Chirp not found")
+		response.RespondWithError(w, http.StatusNotFound, "Chirp not found")
 	}
 
 }
 
-func handleCreateChirp(db *database.DB) http.HandlerFunc {
+func HandleCreateChirp(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 		var chirpRequest ChirpRequest
 		err := decoder.Decode(&chirpRequest)
 		if err != nil {
-			respondWithError(w, http.StatusBadRequest, "Invalid request")
+			response.RespondWithError(w, http.StatusBadRequest, "Invalid request")
 			return
 		}
 
 		if len(chirpRequest.Body) > 140 {
-			respondWithError(w, http.StatusBadRequest, "Chirp is too long")
+			response.RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
 			return
 		}
 
 		chirp, err := db.CreateChirp(chirpRequest.Body)
 		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		respondWithJSON(w, http.StatusCreated, chirp)
+		response.RespondWithJSON(w, http.StatusCreated, chirp)
 	}
 }

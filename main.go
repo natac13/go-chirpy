@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/natac13/go-chirpy/internal/database"
+	"github.com/natac13/go-chirpy/internal/models"
 )
 
 func main() {
@@ -26,11 +27,12 @@ func main() {
 	router.HandleFunc("GET /admin/metrics", handleAdminMetric(config))
 	router.HandleFunc("/api/reset", handleReset(config))
 
-	router.HandleFunc("POST /api/chirps", handleCreateChirp(db))
-	router.HandleFunc("GET /api/chirps", handleGetChirps(db))
-	router.HandleFunc("GET /api/chirps/{id}", handleGetChirp(db))
+	router.HandleFunc("POST /api/chirps", models.HandleCreateChirp(db))
+	router.HandleFunc("GET /api/chirps", models.HandleGetChirps(db))
+	router.HandleFunc("GET /api/chirps/{id}", models.HandleGetChirp(db))
 
-	router.HandleFunc("POST /api/users", handleCreateUser(db))
+	router.HandleFunc("POST /api/users", models.HandleCreateUser(db))
+	router.HandleFunc("POST /api/login", models.HandleUserLogin(db))
 
 	server := http.Server{
 		Addr:    ":8080",
