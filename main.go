@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/natac13/go-chirpy/internal/database"
+	"github.com/natac13/go-chirpy/internal/models"
 )
 
 const (
@@ -21,6 +23,7 @@ func main() {
 		slog.Info("Debug mode enabled. Deleting database file.", "path", databasePath)
 		os.Remove(databasePath)
 	}
+	godotenv.Load()
 
 	router := http.NewServeMux()
 	config := &apiConfig{
@@ -40,11 +43,13 @@ func main() {
 	router.HandleFunc("GET /admin/metrics", handleAdminMetric(config))
 	router.HandleFunc("/api/reset", handleReset(config))
 
-	router.HandleFunc("POST /api/chirps", handleCreateChirp(db))
-	router.HandleFunc("GET /api/chirps", handleGetChirps(db))
-	router.HandleFunc("GET /api/chirps/{id}", handleGetChirp(db))
+	router.HandleFunc("POST /api/chirps", models.HandleCreateChirp(db))
+	router.HandleFunc("GET /api/chirps", models.HandleGetChirps(db))
+	router.HandleFunc("GET /api/chirps/{id}", models.HandleGetChirp(db))
 
-	router.HandleFunc("POST /api/users", handleCreateUser(db))
+	router.HandleFunc("POST /api/users", models.HandleCreateUser(db))
+	router.HandleFunc("POST /api/login", models.HandleUserLogin(db))
+	router.HandleFunc("PUT /api/users", models.HandleUpdateUser(db))
 
 	server := http.Server{
 		Addr:    ":8080",

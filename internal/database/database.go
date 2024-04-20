@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 	"sync"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type DB struct {
@@ -19,8 +21,9 @@ type Chirp struct {
 }
 
 type User struct {
-	Email string `json:"email"`
-	Id    int    `json:"id"`
+	Email    string `json:"email"`
+	Id       int    `json:"id"`
+	Password string `json:"password"`
 }
 
 type DBStructure struct {
@@ -49,7 +52,6 @@ func (db *DB) ensureDB() error {
 	_, err := os.ReadFile(db.path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			slog.Info("Creating new database file", "path", db.path)
 			if err := os.WriteFile(db.path, []byte("{}"), 0666); err != nil {
 				return err
 			}
@@ -143,19 +145,28 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 		return chirps[i].Id < chirps[y].Id
 	})
 
-	slog.Info("DATABASE - Returning chirps", "chirps", chirps)
 	return chirps, nil
 }
 
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(email, password string) (User, error) {
 	data, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
 
+	if db.checkDuplicateEmail(email) {
+		return User{}, nil
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return User{}, err
+	}
+
 	user := User{
-		Id:    len(data.Users) + 1,
-		Email: email,
+		Id:       len(data.Users) + 1,
+		Email:    email,
+		Password: string(hash),
 	}
 
 	data.Users[user.Id] = user
@@ -165,4 +176,96 @@ func (db *DB) CreateUser(email string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (db *DB) UpdateUser(userId int, email, password string) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	user, err := db.getUserById(userId)
+	if err != nil {
+		return User{}, err
+	}
+
+	if email != "" {
+		user.Email = email
+	}
+
+	if password != "" {
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return User{}, err
+		}
+
+		user.Password = string(hash)
+	}
+
+	data.Users[user.Id] = user
+
+	if err := db.writeDB(data); err != nil {
+		return user, err
+	}
+
+	return user, nil
+}
+
+func (db *DB) checkDuplicateEmail(email string) bool {
+	data, err := db.loadDB()
+	if err != nil {
+		return true
+	}
+
+	for _, user := range data.Users {
+		if user.Email == email {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (db *DB) VerifyPassword(email, password string) (User, error) {
+	user, err := db.getUserByEmail(email)
+	if err != nil {
+		return User{}, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
+
+func (db *DB) getUserByEmail(email string) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	for _, user := range data.Users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return User{}, nil
+}
+
+func (db *DB) getUserById(id int) (User, error) {
+	data, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	for _, user := range data.Users {
+		if user.Id == id {
+			return user, nil
+		}
+	}
+
+	return User{}, nil
 }
