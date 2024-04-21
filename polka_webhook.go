@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/natac13/go-chirpy/internal/database"
@@ -19,7 +20,21 @@ type PolkaEventData struct {
 }
 
 func handlePolkaWebhook(db *database.DB) http.HandlerFunc {
+	apiKey := os.Getenv("POLKA_API_KEY")
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			response.RespondWithError(w, http.StatusUnauthorized, "No token provided")
+			return
+		}
+
+		authHeaderKey := strings.TrimLeft(authHeader, "ApiKey ")
+		if authHeaderKey != apiKey {
+			response.RespondWithError(w, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+
 		decoder := json.NewDecoder(r.Body)
 		var polkaRequest PolkaRequest
 		err := decoder.Decode(&polkaRequest)
