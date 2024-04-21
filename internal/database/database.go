@@ -135,7 +135,7 @@ func (db *DB) CreateChirp(body string, userId int) (Chirp, error) {
 }
 
 // GetChirps returns all chirps in the database
-func (db *DB) GetChirps() ([]Chirp, error) {
+func (db *DB) GetChirps(authorId int) ([]Chirp, error) {
 
 	data, err := db.loadDB()
 	if err != nil {
@@ -149,6 +149,9 @@ func (db *DB) GetChirps() ([]Chirp, error) {
 
 	chirps := []Chirp{}
 	for _, chirp := range data.Chirps {
+		if authorId != 0 && chirp.AuthorId != authorId {
+			continue
+		}
 		chirps = append(chirps, chirp)
 	}
 
