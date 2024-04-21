@@ -46,14 +46,18 @@ func cleanChirpMessage(m string) string {
 func HandleGetChirps(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		s := r.URL.Query().Get("author_id")
-		// s is a string that contains the value of the author_id query parameter
-		// if it exists, or an empty string if it doesn't
+		sorting := r.URL.Query().Get("sort")
+
 		authorId, err := strconv.Atoi(s)
 		if err != nil {
 			authorId = 0
 		}
 
-		chirps, err := db.GetChirps(authorId)
+		if sorting == "" {
+			sorting = "asc"
+		}
+
+		chirps, err := db.GetChirps(authorId, sorting)
 		if err != nil {
 			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -67,7 +71,7 @@ func HandleGetChirp(db *database.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.PathValue("id")
 		id, err := strconv.Atoi(idStr)
-		chirps, err := db.GetChirps(0)
+		chirps, err := db.GetChirps(0, "asc")
 		if err != nil {
 			response.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
