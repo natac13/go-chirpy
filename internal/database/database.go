@@ -2,6 +2,7 @@ package database
 
 import (
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"os"
 	"sort"
@@ -23,9 +24,10 @@ type Chirp struct {
 }
 
 type User struct {
-	Email    string `json:"email"`
-	Id       int    `json:"id"`
-	Password string `json:"password"`
+	Email       string `json:"email"`
+	Id          int    `json:"id"`
+	Password    string `json:"password"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 type RevokedToken struct {
@@ -202,9 +204,10 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 	}
 
 	user := User{
-		Id:       len(data.Users) + 1,
-		Email:    email,
-		Password: string(hash),
+		Id:          len(data.Users) + 1,
+		Email:       email,
+		Password:    string(hash),
+		IsChirpyRed: false,
 	}
 
 	data.Users[user.Id] = user
@@ -247,6 +250,27 @@ func (db *DB) UpdateUser(userId int, email, password string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func (db *DB) UpgradeToChirpyRed(userId int) error {
+	data, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	user, err := db.GetUserById(userId)
+	if err != nil {
+		return err
+	}
+
+	user.IsChirpyRed = true
+	data.Users[user.Id] = user
+
+	if err := db.writeDB(data); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (db *DB) RevokeToken(token string) error {
@@ -332,5 +356,5 @@ func (db *DB) GetUserById(id int) (User, error) {
 		}
 	}
 
-	return User{}, nil
+	return User{}, errors.New("User not found")
 }

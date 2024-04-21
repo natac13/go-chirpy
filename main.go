@@ -55,6 +55,8 @@ func main() {
 	router.HandleFunc("POST /api/revoke", RevokeTokenHandler(db))
 	router.HandleFunc("POST /api/refresh", RefreshTokenHandler(db))
 
+	router.HandleFunc("POST /api/polka/webhooks", handlePolkaWebhook(db))
+
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: middlewareCors(router),

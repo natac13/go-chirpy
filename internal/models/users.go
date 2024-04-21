@@ -25,6 +25,7 @@ type UserResponse struct {
 	Password     string `json:"-"`
 	Token        string `json:"token,omitempty"`
 	RefreshToken string `json:"refresh_token,omitempty"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
 }
 
 func HandleCreateUser(db *database.DB) http.HandlerFunc {
@@ -44,8 +45,9 @@ func HandleCreateUser(db *database.DB) http.HandlerFunc {
 		}
 
 		response.RespondWithJSON(w, http.StatusCreated, UserResponse{
-			Email: user.Email,
-			Id:    user.Id,
+			Email:       user.Email,
+			Id:          user.Id,
+			IsChirpyRed: user.IsChirpyRed,
 		})
 	}
 }
@@ -83,6 +85,7 @@ func HandleUserLogin(db *database.DB) http.HandlerFunc {
 			Id:           user.Id,
 			Token:        accessToken,
 			RefreshToken: refreshToken,
+			IsChirpyRed:  user.IsChirpyRed,
 		})
 	}
 }
@@ -116,8 +119,9 @@ func HandleUpdateUser(db *database.DB) http.HandlerFunc {
 		}
 
 		response.RespondWithJSON(w, http.StatusOK, UserResponse{
-			Email: user.Email,
-			Id:    user.Id,
+			Email:       user.Email,
+			Id:          user.Id,
+			IsChirpyRed: user.IsChirpyRed,
 		})
 
 	}
